@@ -6,7 +6,6 @@
 ![AWS](https://img.shields.io/badge/AWS-EC2-orange?logo=amazonaws)
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
 ![Status](https://img.shields.io/badge/Status-Production-success)
-![License](https://img.shields.io/badge/License-MIT-green)
 
 </p>
 
