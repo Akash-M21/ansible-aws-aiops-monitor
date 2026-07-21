@@ -1,0 +1,40 @@
+---
+- name: Dispatch Alert Report
+  hosts: localhost
+  gather_facts: yes
+  tasks:
+    - name: Build Aggregated Metrics Object for Jinja2 Template
+      ansible.builtin.set_fact:
+        collected_metrics: >-
+          [
+            {% for host in groups['all'] %}
+            {
+              "hostname": "{{ hostvars[host]['vm_hostname'] | default(host) }}",
+              "cpu": "{{ hostvars[host]['vm_cpu'] | default(0) }}",
+              "mem": "{{ hostvars[host]['vm_mem'] | default(0) }}",
+              "disk": "{{ hostvars[host]['vm_disk'] | default(0) }}",
+              "top_cpu_offenders": {{ hostvars[host]['top_cpu_offenders'] | default([]) | to_json }},
+              "cpu_load_type": "{{ hostvars[host]['cpu_load_type'] | default('Normal') }}",
+              "remediation_action_taken": "{{ hostvars[host]['remediation_action_taken'] | default('None') }}"
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+
+    - name: Compile Animated Alert HTML Report
+      ansible.builtin.template:
+        src: templates/report_email_animated.html.j2
+        dest: /tmp/monitoring_report.html
+      vars:
+        timestamp: "{{ ansible_date_time.iso8601 }}"
+
+    - name: Dispatch Email Alert
+      community.general.mail:
+        host: "{{ smtp_server }}"
+        port: "{{ smtp_port }}"
+        username: "{{ smtp_username }}"
+        password: "{{ smtp_password }}"
+        to: "{{ receiver_email }}"
+        subject: "📊 Infrastructure Health & Remediation Status Alert"
+        body: "{{ lookup('file', '/tmp/monitoring_report.html') }}"
+        subtype: html
+        secure: starttls
