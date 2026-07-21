@@ -1,0 +1,6 @@
+smtp_server: smtp.gmail.com
+smtp_port: 587
+sender_email: "monitoring@example.com"
+receiver_email: "admin@example.com"
+smtp_username: "monitoring@example.com"
+smtp_password: "your-app-password-here"
