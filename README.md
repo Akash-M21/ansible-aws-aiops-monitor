@@ -1,289 +1,252 @@
 # ⚡ Ansible AWS AIOps Monitor & Auto-Remediation Engine
 
-> An automated VM health monitor, CPU diagnostic engine, and self-healing incident remediation pipeline using Ansible, Python (`boto3`, `paramiko`), and AWS Dynamic Inventory.
+<p align="center">
+
+![Ansible](https://img.shields.io/badge/Ansible-Automation-red?logo=ansible)
+![AWS](https://img.shields.io/badge/AWS-EC2-orange?logo=amazonaws)
+![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
+![Status](https://img.shields.io/badge/Status-Production-success)
+![License](https://img.shields.io/badge/License-MIT-green)
+
+</p>
+
+> **Agentless infrastructure monitoring, automated incident remediation, and HTML reporting for AWS EC2 using Ansible, Python, boto3, Paramiko, and Dynamic Inventory.**
 
 ---
 
-## 📑 Table of Contents
+# 📑 Table of Contents
 
-* [Project Overview](#-project-overview)
-* [Architecture](#-architecture)
-* [Key Features](#-key-features)
-* [Project Directory Structure](#-project-directory-structure)
-* [Prerequisites](#-prerequisites)
-* [Step-by-Step Implementation Guide](#-step-by-step-implementation-guide)
-  * [Step 1: Set Up Python Virtual Environment](#step-1-set-up-python-virtual-environment)
-  * [Step 2: Run Unit Tests (`pytest` + `moto`)](#step-2-run-unit-tests-pytest--moto)
-  * [Step 3: AWS Configuration & Sequential Node Tagging](#step-3-aws-configuration--sequential-node-tagging)
-  * [Step 4: Dynamic Inventory Discovery](#step-4-dynamic-inventory-discovery)
-  * [Step 5: SMTP Alert Notification Setup](#step-5-smtp-alert-notification-setup)
-  * [Step 6: Run the Master Automation Pipeline](#step-6-run-the-master-automation-pipeline)
-  * [Step 7: Automate via Cron Schedule](#step-7-automate-via-cron-schedule)
-* [Troubleshooting & Diagnostics](#-troubleshooting--diagnostics)
-* [Sample Execution Outputs](#-sample-execution-outputs)
+- Project Overview
+- Architecture
+- Workflow
+- Key Features
+- Tech Stack
+- Project Structure
+- Prerequisites
+- Implementation Guide
+- Troubleshooting
+- Sample Output
+- Future Enhancements
+- License
 
 ---
 
-## 📌 Project Overview
+# 📌 Project Overview
 
-Monitoring cloud virtual machines requires moving beyond passive alert notifications to active **self-healing infrastructure**. 
+This project provides an automated AIOps workflow for AWS EC2 instances.
 
-This repository provides an agentless, production-ready automation framework that:
-1. **Discovers** AWS EC2 instances dynamically using cloud tags.
-2. **Audits** system metrics (CPU %, Memory %, Disk %) and isolates CPU process offenders when usage spikes above 80%.
-3. **Remediates** incidents automatically (cleans disk caches, restarts web services, or terminates runaway process PIDs).
-4. **Dispatches** animated HTML alert emails detailing performance metrics, process diagnostics, and remediation actions taken.
+It automatically:
+
+- Discovers EC2 instances using AWS Dynamic Inventory
+- Collects CPU, Memory and Disk metrics
+- Detects abnormal CPU usage
+- Performs automated remediation
+- Generates HTML reports
+- Sends email notifications
 
 ---
 
-## 🏗️ Architecture
+# 🏗️ Architecture
 
 ```text
-               +----------------------------------+
-               |        AWS EC2 Instances         |
-               |     (Tagged: Environment=dev)    |
-               +----------------+-----------------+
-                                |
-                                | AWS API Discovery
-                                v
-               +----------------------------------+
-               |  Ansible Dynamic Inventory Plugin |
-               |     (inventory/aws_ec2.yaml)     |
-               +----------------+-----------------+
-                                |
-                                v
-               +----------------------------------+
-               |      Ansible Control Node        |
-               +----------------+-----------------+
-                                |
-                   playbook.yaml Orchestrator
-                                |
-         +----------------------+----------------------+
-         |                      |                      |
-         v                      v                      v
-+------------------+  +------------------+  +------------------+
-|collect_metrics.yaml| |auto_remediation  | | send_report.yaml |
-|                  |  |      .yaml       |  |                  |
-| - CPU % & Top 3  |  | - Disk Clean (>85%)| | - Jinja2 Template|
-|   Process PIDs   |  | - Service Restart|  |   Compilation    |
-| - Memory & Disk  |  |   (CPU > 80%)    |  | - SMTP Mail Alert|
-| - Load Breakdown |  | - Process Kill   |  |   Dispatch       |
-|   (%us, %sy, %wa)|  |   (CPU > 95%)    |  |                  |
-
-+------------------+  +------------------+  +------------------+
+AWS EC2
+   │
+   ▼
+Dynamic Inventory
+   │
+   ▼
+Collect Metrics
+   │
+   ▼
+CPU Diagnostics
+   │
+   ▼
+Auto Remediation
+   │
+   ▼
+Generate HTML Report
+   │
+   ▼
+Email Notification
 ```
-## ✨ Key Features
-
-🏷️ Dynamic AWS EC2 Discovery: Automatically targets running EC2 instances filtered by cloud tags (Environment=dev).
-
-🔎 In-Depth CPU Process Diagnostics: When CPU exceeds 80%, captures the Top 3 PID offenders (process name, user, CPU usage) and breaks down load types (%user, %system, %iowait).
-
-⚡ Self-Healing Auto-Remediation:
-
-Disk > 85%: Cleans APT package caches and truncates journalctl logs.
-
-CPU 80% – 95%: Restarts web application services (e.g., Nginx).
-
-CPU > 95%: Safely terminates runaway CPU hogging processes.
-
-📧 Animated HTML Email Alerts: Delivers card-based email alerts showing metrics, CPU diagnostic boxes, and remediation summaries.
-
-🧪 Mock-backed Unit Testing (moto): Runs offline unit tests with pytest without invoking live AWS resources or incurring cloud costs.
 
 ---
 
-## 📂 Project Directory Structure
+# 🔄 Workflow
 
+```text
+Discover Instances
+      │
+Collect Metrics
+      │
+CPU Analysis
+      │
+Auto Remediation
+      │
+Generate HTML Report
+      │
+Send Email
 ```
+
+---
+
+# ✨ Key Features
+
+- 🏷 Dynamic AWS EC2 Discovery
+- 📊 CPU / Memory / Disk Monitoring
+- 🔍 Top CPU Process Diagnostics
+- ⚡ Automatic Self-Healing
+- 📧 HTML Email Reports
+- 🧪 Offline Testing using pytest + moto
+
+---
+
+# 🛠 Tech Stack
+
+- Ansible
+- AWS EC2
+- Python
+- boto3
+- Paramiko
+- Jinja2
+- SMTP
+- Pytest
+- Moto
+
+---
+
+# 📂 Project Structure
+
+```text
 ansible-aws-aiops-monitor/
 ├── .github/
-│   └── workflows/              # GitHub Actions CI/CD configuration
 ├── group_vars/
-│   └── all.yaml                # Global SMTP & notification credentials
 ├── inventory/
-│   └── aws_ec2.yaml            # AWS EC2 dynamic inventory configuration
 ├── scripts/
-│   ├── tag_instances.py        # Sequentially tags EC2 instances (web-01, web-02)
-│   └── remediate.py            # Boto3 function to reboot unreachable instances
 ├── tasks/
-│   └── auto_remediation.yaml   # Self-healing play tasks for disk & CPU issues
 ├── templates/
-│   └── report_email_animated.html.j2 # Jinja2 HTML alert template
 ├── tests/
-│   └── test_remediate.py       # Pytest unit tests backed by Moto
-├── ansible.cfg                 # Ansible default settings
-├── collect_metrics.yaml        # Metric gathering & CPU diagnostic playbook
-├── playbook.yaml               # Master pipeline orchestrator
-├── send_report.yaml            # Jinja2 rendering & email dispatch playbook
-├── requirements.txt            # Python dependencies
-├── .gitignore                  # Git ignore rules
-└── README.md                   # Project documentation
-
+├── ansible.cfg
+├── collect_metrics.yaml
+├── playbook.yaml
+├── send_report.yaml
+├── requirements.txt
+└── README.md
 ```
+
 ---
 
-## ⚙️ Prerequisites
+# ⚙️ Prerequisites
 
-```
+- [ ] Linux / WSL / macOS
+- [ ] Python 3.10+
+- [ ] Ansible
+- [ ] AWS CLI configured
+- [ ] EC2 instances tagged `Environment=dev`
+- [ ] SMTP credentials
 
-Before executing the pipeline, ensure you have:
-
-Linux / WSL / MacOS Control Node
-
-Python 3.10+ and python3-venv
-
-AWS Account with running EC2 instances tagged as Environment=dev
-
-AWS CLI configured (aws configure) with valid Access & Secret Keys
-
-SMTP Credentials (e.g., Gmail address + App Password)
-
-```
 ---
 
-### 🛠️ Step-by-Step Implementation Guide
+# 🚀 Implementation Guide
 
-## Step 1: Set Up Python Virtual Environment
+## 1. Create Virtual Environment
 
-```
-Clone the repository and install all required Python dependencies and Ansible collections:
-
-# 1. Initialize Python virtual environment
+```bash
 python3 -m venv ansible-env
-
-# 2. Activate virtual environment
 source ansible-env/bin/activate
-
-# 3. Install required Python modules
 pip install -r requirements.txt
-
-# 4. Install required Ansible Galaxy collections
 ansible-galaxy collection install amazon.aws community.general
-
 ```
----
 
-## Step 2: Run Unit Tests (pytest + moto)
+## 2. Run Unit Tests
 
-Before running playbooks against live AWS infrastructure, run the unit test suite to verify the Python EC2 reboot logic offline.
-```
+```bash
 pytest -v
+```
 
-```
-Note: moto intercepts all boto3 AWS API calls in memory, ensuring zero cloud calls or costs during testing.
----
+## 3. Configure AWS
 
----
-## Step 3: AWS Configuration & Sequential Node Tagging
-
-1. Ensure your AWS credentials are set up:
-```
-     aws configure
-```
-2. Execute scripts/tag_instances.py to assign sequential Name tags (web-01, web-02, ...) to running Environment=dev instances:
-```
+```bash
+aws configure
 ./scripts/tag_instances.py
-
 ```
----
 
-## Step 4: Dynamic Inventory Discovery
+## 4. Verify Inventory
 
-Confirm that Ansible's dynamic inventory plugin can query AWS and detect your instances:
-```
+```bash
 ansible-inventory -i inventory/aws_ec2.yaml --graph
-
 ```
-Expected Output:
 
-```
-@all:
-  |--@aws_ec2:
-  |  |--web-01
-  |  |--web-02
+## 5. Configure SMTP
 
-```
----
-
-## Step 5: SMTP Alert Notification Setup
-
-Update group_vars/all.yaml with your SMTP server credentials:
-```
+```yaml
 smtp_server: smtp.gmail.com
 smtp_port: 587
-sender_email: "your-email@gmail.com"
-receiver_email: "admin-alert@gmail.com"
-smtp_username: "your-email@gmail.com"
-smtp_password: "your-16-digit-app-password"  # Google App Password
-
+sender_email: your-email@gmail.com
+receiver_email: admin@example.com
+smtp_username: your-email@gmail.com
+smtp_password: your-app-password
 ```
 
----
+## 6. Execute
 
-## Step 6: Run the Master Automation Pipeline
-
-Execute the master orchestrator playbook. It will gather telemetry, diagnose CPU spikes, execute self-healing tasks if thresholds are breached, and dispatch the HTML alert email.
-
-```
+```bash
 ansible-playbook playbook.yaml
 ```
 
----
+## 7. Schedule
 
-## Step 7: Automate via Cron Schedule
-To run the monitoring and self-healing engine continuously every hour, add a crontab entry:
-
-```
-crontab -e
-```
-Add the following schedule line:
-
-```
-0 * * * * /bin/bash -c "source /path/to/ansible-env/bin/activate && ansible-playbook /path/to/ansible-aws-aiops-monitor/playbook.yaml"
-
+```bash
+0 * * * * /bin/bash -c "source /path/to/ansible-env/bin/activate && ansible-playbook /path/to/playbook.yaml"
 ```
 
 ---
 
-### 🧪 Troubleshooting & Diagnostics
-```
-Problem  Root Cause  Resolution
-Host Unreachable via SSHMissing private key or closed Security GroupEnsure AWS Security Group allows inbound SSH (Port 22) from your Control Node IP.
-boto3 / botocore missingAnsible running outside virtual environmentEnsure you run source ansible-env/bin/activate before executing playbooks.
-Dynamic Inventory EmptyAWS tag mismatch or wrong regionVerify instances have Environment=dev tags and are in running state. Confirm the region in inventory/aws_ec2.yaml.
-Email Not ArrivingInvalid SMTP credentials or blocked portConfirm port 587 is open outbound. For Gmail, ensure you are using an App Password, not your main Google account password.
+# 🧰 Troubleshooting
 
-```
+| Problem | Cause | Resolution |
+|---------|-------|------------|
+| SSH Failure | SG blocks port 22 | Allow SSH |
+| Empty Inventory | Wrong tags/region | Verify Environment=dev |
+| boto3 Missing | venv inactive | Activate environment |
+| Email Failure | Invalid SMTP | Use App Password |
+
 ---
-### 📊 Sample Execution Outputs
 
-Master Playbook Output
-```
-PLAY [Collect Performance Telemetry & CPU Diagnostics] ************************************
-ok: [web-01]
+# 📊 Sample Output
 
-TASK [Capture Top CPU Processes (if CPU > 80%)] ******************************************
+```console
+PLAY [Collect Metrics]
+
+TASK [CPU Diagnostics]
 changed: [web-01]
 
-PLAY [Execute Automated Incident Remediation] ********************************************
-changed: [web-01] => (item=Restarted Nginx service)
+TASK [Auto Remediation]
+changed: [web-01]
 
-PLAY [Dispatch Alert Report] *************************************************************
-changed: [localhost] => (Compiled HTML & dispatched email)
+TASK [Send Email]
+ok: [localhost]
 ```
+
+| Host | CPU | Memory | Disk | Action |
+|------|----:|-------:|----:|--------|
+| web-01 | 🔴83% |45%|41%|Restarted Nginx |
+| web-02 | 🟢25% |40%|35%|No Action |
 
 ---
 
-### Generated Email Alert
+# 🚀 Future Enhancements
 
-```
+- CloudWatch Integration
+- Slack Notifications
+- Grafana Dashboards
+- Prometheus Export
+- Multi-region Support
 
-**Hostname,🔥 CPU Usage & Diagnostics,📥 Memory,📦 Disk,⚡ Auto-Remediation Status
-web-01,"83.4%🔴 CRITICAL🔥 Top CPU Processes:• www-data, PID: 14201, CPU: 72.1% (nginx)📊 Load: User: 78.2%, System: 4.1%, IOwait: 1.1%",45%,41%,⚙️ Restarted Nginx service.
-web-02,25.0%🟢 HEALTHY,40%,35%,No action required**
-
-```
 ---
 
+# 👨‍💻 Author
 
-   
+**Akash M**
+
+DevOps Engineer • AWS • Terraform • Docker • Kubernetes • Ansible • Python
