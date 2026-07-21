@@ -1,0 +1,35 @@
+---
+- name: Collect Performance Telemetry & CPU Diagnostics
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Audit Overall CPU Usage
+      ansible.builtin.shell: "top -bn1 | grep 'Cpu(s)' | sed \"s/.*, *\\([0-9.]*\\)%* id.*/\\1/\" | awk '{print 100 - $1}'"
+      register: cpu_usage
+
+    - name: Audit Memory Usage
+      ansible.builtin.shell: "free | awk '/Mem:/ {printf \"%.0f\", $3/$2 * 100}'"
+      register: memory_usage
+
+    - name: Audit Disk Usage
+      ansible.builtin.shell: "df / | awk 'NR==2 {print $5}' | sed 's/%//'"
+      register: disk_usage
+
+    - name: Capture Top CPU Processes (if CPU > 80%)
+      ansible.builtin.shell: "ps aux --sort=-%cpu | head -n 4 | tail -n 3 | awk '{print $1 \", PID: \" $2 \", CPU: \" $3 \"% (\" $11 \")\"}'"
+      register: top_cpu_processes
+      when: cpu_usage.stdout | default(0) | float > 80
+
+    - name: Capture Detailed CPU Load Breakdown (if CPU > 80%)
+      ansible.builtin.shell: "top -bn1 | grep '%Cpu' | awk '{print \"User: \" $2 \"%, System: \" $4 \"%, IOwait: \" $10 \"%\"}'"
+      register: cpu_breakdown
+      when: cpu_usage.stdout | default(0) | float > 80
+
+    - name: Map Individual Host Metrics
+      ansible.builtin.set_fact:
+        vm_hostname: "{{ inventory_hostname }}"
+        vm_cpu: "{{ cpu_usage.stdout | default(0) | float }}"
+        vm_mem: "{{ memory_usage.stdout | default(0) | float }}"
+        vm_disk: "{{ disk_usage.stdout | default(0) | float }}"
+        top_cpu_offenders: "{{ top_cpu_processes.stdout_lines | default([]) }}"
+        cpu_load_type: "{{ cpu_breakdown.stdout | default('Normal') }}"
