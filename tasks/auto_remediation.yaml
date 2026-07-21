@@ -1,0 +1,34 @@
+---
+- name: Execute Automated Incident Remediation
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Clean APT cache and logs if Disk > 85%
+      ansible.builtin.shell: |
+        apt-get clean
+        journalctl --vacuum-size=100M
+      when: vm_disk | default(0) | float > 85
+      become: yes
+      register: disk_remediation
+
+    - name: Restart Nginx Web Service if CPU is between 80% and 95%
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+      when: vm_cpu | default(0) | float > 80 and vm_cpu | default(0) | float <= 95
+      become: yes
+      register: service_restart
+
+    - name: Terminate Top Runaway Process if CPU > 95%
+      ansible.builtin.shell: "kill -9 $(ps aux --sort=-%cpu | awk 'NR==2 {print $2}')"
+      when: vm_cpu | default(0) | float > 95
+      become: yes
+      register: killed_process
+
+    - name: Record Remediation Action
+      ansible.builtin.set_fact:
+        remediation_action_taken: >-
+          {% if vm_cpu | default(0) | float > 95 %} Terminated top runaway CPU process. {% endif %}
+          {% if vm_cpu | default(0) | float > 80 and vm_cpu | default(0) | float <= 95 %} Restarted Nginx service. {% endif %}
+          {% if vm_disk | default(0) | float > 85 %} Cleaned logs & APT cache. {% endif %}
+          {% if vm_cpu | default(0) | float <= 80 and vm_disk | default(0) | float <= 85 %} None {% endif %}
